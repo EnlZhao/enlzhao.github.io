@@ -78,7 +78,6 @@
         .info-module { margin-bottom: 30px; }
         .module-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--text-secondary); margin-bottom: 15px; opacity: 0.7; }
 
-        /* 新增：News 列表样式 */
         .news-list { list-style: none; display: flex; flex-direction: column; gap: 16px; }
         .news-item { display: flex; flex-direction: column; gap: 4px; position: relative; padding-left: 12px; border-left: 2px solid var(--border-color); transition: border-color 0.3s; }
         .news-item:hover { border-left-color: var(--text-secondary); }
@@ -97,42 +96,37 @@
         .tag { font-size: 0.75rem; padding: 5px 12px; border-radius: 8px; border: 1px solid var(--border-color); color: var(--text-secondary); background: var(--bg-secondary); }
 
 
-        /* --- 4. 右侧内容与自适应布局逻辑 --- */
-        .content-area { display: flex; flex-direction: column; gap: 60px; } /* 调整间距 */
+        /* --- 4. 右侧内容 --- */
+        .content-area { display: flex; flex-direction: column; gap: 60px; }
         
-        /* 新增：右侧 About 样式调整 */
-        .bio-text { 
-            line-height: 1.8; color: var(--text-primary); opacity: 0.9; font-size: 1.05rem; 
-            max-width: 800px; /* 限制宽度增加阅读舒适度 */
+        .bio-list {
+            list-style: none; 
+            padding: 0; margin: 0;
+            display: flex; flex-direction: column; gap: 12px;
         }
+        .bio-list li {
+            position: relative; padding-left: 24px; line-height: 1.7; color: var(--text-primary); opacity: 0.9; font-size: 1.05rem;
+        }
+        .bio-list li::before { content: '◈'; position: absolute; left: 0; top: 1px; color: var(--text-secondary); font-size: 0.9em; }
 
-        /* 核心布局逻辑：Frame Grid */
         .frame-grid {
-            display: grid;
-            gap: 30px;
-            perspective: 2000px;
+            display: grid; gap: 30px; perspective: 2000px;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         }
-
-        .frame-grid:has(> :nth-child(4):last-child) {
-            grid-template-columns: repeat(4, 1fr);
-        }
+        .frame-grid:has(> :nth-child(4):last-child) { grid-template-columns: repeat(4, 1fr); }
 
         /* --- 5. 浮雕金属画框 (Embossed Metal Frame) --- */
         .art-frame {
-            position: relative; 
-            aspect-ratio: 1 / 1.2; 
+            position: relative; aspect-ratio: 1 / 1.2; 
             box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6); 
             transform-style: preserve-3d; cursor: pointer;
             transition: transform 0.1s linear; 
-            border-radius: 16px; 
-            overflow: hidden;
+            border-radius: 16px; overflow: hidden;
         }
 
         .frame-bezel {
             position: absolute; inset: 0;
-            background: var(--bezel-base);
-            border-radius: 16px; 
+            background: var(--bezel-base); border-radius: 16px; 
             box-shadow: 
                 inset 0 0 15px 2px var(--bezel-inner-shadow),
                 inset 2px 2px 3px var(--bezel-highlight),
@@ -144,37 +138,23 @@
         }
         
         .frame-matting {
-            position: absolute; inset: 12px;
-            background: var(--bg-secondary);
-            border-radius: 10px; 
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
-            transform: translateZ(5px);
+            position: absolute; inset: 12px; background: var(--bg-secondary); border-radius: 10px; 
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.8); transform: translateZ(5px);
         }
 
         .frame-canvas {
-            position: absolute; inset: 24px;
-            background: #000;
-            border-radius: 6px;
-            overflow: hidden; 
-            box-shadow: 
-                inset 0 0 20px rgba(0,0,0,0.6),
-                0 0 0 1px rgba(255,255,255,0.1);
-            transform: translateZ(10px);
+            position: absolute; inset: 24px; background: #000; border-radius: 6px; overflow: hidden; 
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.1); transform: translateZ(10px);
         }
 
         .canvas-bg {
-            position: absolute; inset: 0; 
-            opacity: 1; 
-            background-size: cover; 
-            background-position: center; 
+            position: absolute; inset: 0; opacity: 1; 
+            background-size: cover; background-position: center; 
             filter: grayscale(0%) brightness(100%) contrast(100%); 
             transition: filter 0.3s ease; 
         }
-        .art-frame:hover .canvas-bg {
-             filter: brightness(110%) contrast(105%) saturate(110%); 
-        }
+        .art-frame:hover .canvas-bg { filter: brightness(110%) contrast(105%) saturate(110%); }
         
-        /* 图片链接 (需自行替换) */
         .f-github .canvas-bg { background-image: url('./fig/github.png'); }
         .f-scholar .canvas-bg { background-image: url('./fig/blog.png'); }
         .f-notebook .canvas-bg { background-image: url('./fig/notebook.png'); }
@@ -183,20 +163,14 @@
         .frame-content {
             position: absolute; inset: 0;
             display: flex; flex-direction: column; align-items: center; justify-content: flex-end; 
-            padding-bottom: 20px; 
-            transform: translateZ(30px); 
-            z-index: 10;
+            padding-bottom: 20px; transform: translateZ(30px); z-index: 10;
         }
-
-        .icon-relief { display: none; } 
 
         .frame-label {
             font-size: 0.9rem; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: 0.12em;
             text-shadow: 0 0 8px rgba(0,0,0,0.8), 0 0 3px rgba(0,0,0,1); 
             background: rgba(0,0,0,0.5); padding: 6px 14px; border-radius: 6px; 
-            border: 1px solid rgba(255,255,255,0.2); 
-            transform: translateZ(2px); 
-            backdrop-filter: blur(2px); 
+            border: 1px solid rgba(255,255,255,0.2); transform: translateZ(2px); backdrop-filter: blur(2px); 
         }
 
         .frame-glass {
@@ -208,13 +182,79 @@
         .art-frame:hover .frame-glass { opacity: 1; }
         .art-frame:hover .frame-bezel { filter: brightness(1.15); }
         
-        /* --- 6. 论文列表 --- */
-        .pub-stack { display: flex; flex-direction: column; gap: 16px; }
+        /* --- 6. 时间轴论文列表 (Timeline Publications) --- */
+        .pub-stack { 
+            display: flex; flex-direction: column; gap: 0; /* Gap 由 padding 处理以连接线条 */
+        }
+
+        .timeline-item {
+            display: grid;
+            grid-template-columns: 60px 1fr; /* 左侧时间轴宽度 + 右侧卡片 */
+            gap: 20px;
+            position: relative;
+        }
+
+        /* 左侧时间轴区域 */
+        .timeline-marker {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            padding-top: 24px; /* 对齐卡片顶部 */
+        }
+
+        /* 竖线 */
+        .timeline-line {
+            position: absolute;
+            top: 24px; 
+            bottom: -30px; /* 向下延伸连接下一个 */
+            left: 50%;
+            width: 1px;
+            background: var(--border-color);
+            transform: translateX(-50%);
+            z-index: 0;
+        }
+        
+        /* 最后一个元素不需要向下的线 */
+        .timeline-item:last-child .timeline-line {
+            display: none;
+        }
+
+        /* 节点圆点 */
+        .timeline-dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: var(--bg-core);
+            border: 2px solid var(--text-secondary);
+            z-index: 1;
+            margin-bottom: 8px;
+            transition: all 0.3s;
+        }
+        
+        /* 获奖时圆点变色 */
+        .timeline-dot.award {
+            border-color: #f1c40f;
+            background: #f1c40f;
+            box-shadow: 0 0 8px rgba(241, 196, 15, 0.5);
+        }
+
+        /* 年份标签 */
+        .timeline-year {
+            font-size: 0.8rem;
+            font-family: monospace;
+            color: var(--text-secondary);
+            background: var(--bg-core); /* 遮挡线条 */
+            padding: 4px 0;
+            z-index: 1;
+        }
+
+        /* 论文卡片 */
         .pub-card {
             position: relative; padding: 24px; border-radius: 16px;
             background: var(--bg-secondary); border: 1px solid var(--border-color);
             text-decoration: none; color: inherit; overflow: hidden;
             transition: transform 0.2s;
+            margin-bottom: 30px; /* 卡片间距 */
         }
         .pub-card:hover { transform: translateX(5px); }
         .pub-card.award { border-left: 3px solid #f1c40f; background: linear-gradient(90deg, rgba(241, 196, 15, 0.05), transparent); }
@@ -233,6 +273,8 @@
             .sidebar { text-align: center; position: relative; top: 0; display: flex; flex-direction: column; align-items: center; }
             .frame-grid, .frame-grid:has(> :nth-child(4):last-child) { grid-template-columns: 1fr; }
             .art-frame { aspect-ratio: 2/1; }
+            /* 移动端调整时间轴 */
+            .timeline-item { grid-template-columns: 40px 1fr; gap: 10px; }
         }
     </style>
 </head>
@@ -265,19 +307,7 @@
             <div class="info-module">
                 <div class="module-title">News</div>
                 <ul class="news-list">
-                    <!-- <li class="news-item">
-                        <span class="news-date">Nov 2025</span>
-                        <span class="news-content">One paper accepted to arXiv!</span>
-                    </li> -->
-                    <!-- <li class="news-item">
-                        <span class="news-date">Oct 2025</span>
-                        <span class="news-content">Started internship at Research Lab.</span>
-                    </li>
-                     <li class="news-item">
-                        <span class="news-date">Sep 2025</span>
-                        <span class="news-content">Attended the annual academic conference.</span>
-                    </li> -->
-                </ul>
+                    </ul>
             </div>
 
             <div class="info-module">
@@ -301,7 +331,7 @@
                 <ul class="bio-list">
                     <li>Received my <b>B.S. in Information Security</b> from <b>Zhejiang University</b> in 2025.</li>
                     <li><b>PhD Candidate</b> at Zhejiang University, expected to graduate in 2030.</li>
-                    <li>My research focuses on network security and large language model system security.</li>
+                    <li>My research focuses on network security and large language model applications.</li>
                     <li>Please feel free to email me for communication on research.</li>
                 </ul>
             </section>
@@ -395,16 +425,27 @@
                 });
                 entries.push(entry);
             }
-            const html = entries.map(e => {
+            
+            const html = entries.map((e, index) => {
                 const isAward = /award|best/i.test(e.note||"");
                 let authors = (e.author||"").split(' and ').map(a => 
                     MY_NAMES.some(n => a.includes(n)) ? `<strong><u>${a}</u></strong>` : a
                 ).join(", ");
-                return `<a href="${e.url}" target="_blank" class="pub-card ${isAward?'award':''}">
-                    <div class="pub-title">${e.title}</div>
-                    <div class="pub-info">${authors} · ${e.year}</div>
-                    <div class="tag-row"><span class="tag">${e.booktitle||e.journal||"Preprint"}</span>${isAward?`<span class="tag highlight">${e.note}</span>`:''}</div>
-                </a>`;
+
+                // 生成时间轴结构
+                return `
+                <div class="timeline-item">
+                    <div class="timeline-marker">
+                        <div class="timeline-dot ${isAward ? 'award' : ''}"></div>
+                        <div class="timeline-year">${e.year || '----'}</div>
+                        <div class="timeline-line"></div>
+                    </div>
+                    <a href="${e.url}" target="_blank" class="pub-card ${isAward?'award':''}">
+                        <div class="pub-title">${e.title}</div>
+                        <div class="pub-info">${authors} · ${e.year}</div>
+                        <div class="tag-row"><span class="tag">${e.booktitle||e.journal||"Preprint"}</span>${isAward?`<span class="tag highlight">${e.note}</span>`:''}</div>
+                    </a>
+                </div>`;
             }).join("");
             document.getElementById('pub-container').innerHTML = html;
         }

@@ -389,7 +389,7 @@
             </section>
 
             <footer class="footer">
-                <div>Copyright &copy; 2025; Theme designed by Gemini-3.0</div>
+                <div>Copyright &copy; 2025 <a href="https://github.com/enlzhao/" target="_blank" rel="noopener">HengZhao</a></div>
                 <div>
                     PV: <span id="busuanzi_value_site_pv">--</span>
                 </div>
@@ -446,7 +446,7 @@
         renderPubs();
 
         function updateTime() {
-            document.getElementById('timeDisplay').textContent = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+            document.getElementById('timeDisplay').textContent = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
         }
         setInterval(updateTime, 1000); updateTime();
 

@@ -9,34 +9,44 @@
     <style>
         /* --- 1. 全局变量 --- */
         :root {
-            --bg-core: #0d0d0d;
-            --bg-secondary: #1a1a1a;
-            --text-primary: #e0e0e0;
-            --text-secondary: #888;
-            --border-color: rgba(255, 255, 255, 0.1);
-            
-            /* 浮雕金属边框材质 */
-            --bezel-base: #2b2b2b; 
-            --bezel-highlight: #555;
-            --bezel-shadow: #000;
-            --bezel-inner-shadow: rgba(0,0,0,0.7);
-            --bezel-light-edge: rgba(255,255,255,0.15);
-
-            --font-main: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
-        }
-
-        [data-theme="light"] {
+            /* === 默认：白天模式配色 (Light Mode) === */
             --bg-core: #f5f5f7;
             --bg-secondary: #ffffff;
             --text-primary: #1d1d1f;
             --text-secondary: #6e6e73;
             --border-color: rgba(0, 0, 0, 0.08);
 
+            /* 白天模式：浮雕金属材质 */
             --bezel-base: #e0e0e0;
             --bezel-highlight: #fff;
             --bezel-shadow: #b0b0b0;
             --bezel-inner-shadow: rgba(0,0,0,0.1);
             --bezel-light-edge: rgba(255,255,255,0.8);
+
+            /* 通用配置 */
+            --font-main: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+            
+            /* 艺术画芯配色 (通用) */
+            --art-github: radial-gradient(circle at 30% 30%, #2c3e50 0%, #0a0a0a 100%);
+            --art-scholar: radial-gradient(circle at 70% 70%, #e67e22 0%, #8e44ad 100%);
+            --art-notebook: radial-gradient(circle at 50% 50%, #27ae60 0%, #16a085 100%);
+            --art-email: radial-gradient(circle at 20% 80%, #c0392b 0%, #8e44ad 100%);
+        }
+
+        /* === 覆盖：暗黑模式配色 (Dark Mode) === */
+        [data-theme="dark"] {
+            --bg-core: #0d0d0d;
+            --bg-secondary: #1a1a1a;
+            --text-primary: #e0e0e0;
+            --text-secondary: #888;
+            --border-color: rgba(255, 255, 255, 0.1);
+            
+            /* 暗黑模式：浮雕金属材质 */
+            --bezel-base: #2b2b2b; 
+            --bezel-highlight: #555;
+            --bezel-shadow: #000;
+            --bezel-inner-shadow: rgba(0,0,0,0.7);
+            --bezel-light-edge: rgba(255,255,255,0.15);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; transition: background 0.5s ease, color 0.5s ease; }
@@ -63,7 +73,7 @@
             width: 100px; height: 100px; border-radius: 30px;
             background-size: cover; background-position: center;
             margin-bottom: 25px;
-            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5);
+            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.2); /* 阴影调淡一点适应白底 */
             border: 1px solid var(--border-color);
         }
 
@@ -78,6 +88,7 @@
         .info-module { margin-bottom: 30px; }
         .module-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--text-secondary); margin-bottom: 15px; opacity: 0.7; }
 
+        /* News 列表样式 */
         .news-list { list-style: none; display: flex; flex-direction: column; gap: 16px; }
         .news-item { display: flex; flex-direction: column; gap: 4px; position: relative; padding-left: 12px; border-left: 2px solid var(--border-color); transition: border-color 0.3s; }
         .news-item:hover { border-left-color: var(--text-secondary); }
@@ -118,7 +129,7 @@
         /* --- 5. 浮雕金属画框 (Embossed Metal Frame) --- */
         .art-frame {
             position: relative; aspect-ratio: 1 / 1.2; 
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6); 
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); /* 白天模式阴影稍微调淡 */
             transform-style: preserve-3d; cursor: pointer;
             transition: transform 0.1s linear; 
             border-radius: 16px; overflow: hidden;
@@ -139,7 +150,7 @@
         
         .frame-matting {
             position: absolute; inset: 12px; background: var(--bg-secondary); border-radius: 10px; 
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.8); transform: translateZ(5px);
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.2); transform: translateZ(5px);
         }
 
         .frame-canvas {
@@ -182,79 +193,57 @@
         .art-frame:hover .frame-glass { opacity: 1; }
         .art-frame:hover .frame-bezel { filter: brightness(1.15); }
         
-        /* --- 6. 时间轴论文列表 (Timeline Publications) --- */
-        .pub-stack { 
-            display: flex; flex-direction: column; gap: 0; /* Gap 由 padding 处理以连接线条 */
-        }
+        /* --- 6. 时间轴论文列表 --- */
+        .pub-stack { display: flex; flex-direction: column; gap: 0; }
 
         .timeline-item {
             display: grid;
-            grid-template-columns: 60px 1fr; /* 左侧时间轴宽度 + 右侧卡片 */
+            grid-template-columns: 60px 1fr;
             gap: 20px;
             position: relative;
         }
 
-        /* 左侧时间轴区域 */
         .timeline-marker {
             display: flex;
             flex-direction: column;
             align-items: center;
             position: relative;
-            padding-top: 24px; /* 对齐卡片顶部 */
+            padding-top: 24px; 
         }
 
-        /* 竖线 */
         .timeline-line {
             position: absolute;
-            top: 24px; 
-            bottom: -30px; /* 向下延伸连接下一个 */
-            left: 50%;
-            width: 1px;
+            top: 24px; bottom: -30px; left: 50%; width: 1px;
             background: var(--border-color);
-            transform: translateX(-50%);
-            z-index: 0;
+            transform: translateX(-50%); z-index: 0;
         }
-        
-        /* 最后一个元素不需要向下的线 */
-        .timeline-item:last-child .timeline-line {
-            display: none;
-        }
+        .timeline-item:last-child .timeline-line { display: none; }
 
-        /* 节点圆点 */
         .timeline-dot {
             width: 10px; height: 10px;
             border-radius: 50%;
-            background: var(--bg-core);
+            background: var(--bg-core); /* 跟随背景色 */
             border: 2px solid var(--text-secondary);
             z-index: 1;
             margin-bottom: 8px;
             transition: all 0.3s;
         }
-        
-        /* 获奖时圆点变色 */
         .timeline-dot.award {
-            border-color: #f1c40f;
-            background: #f1c40f;
-            box-shadow: 0 0 8px rgba(241, 196, 15, 0.5);
+            border-color: #f1c40f; background: #f1c40f; box-shadow: 0 0 8px rgba(241, 196, 15, 0.5);
         }
 
-        /* 年份标签 */
         .timeline-year {
-            font-size: 0.8rem;
-            font-family: monospace;
-            color: var(--text-secondary);
+            font-size: 0.8rem; font-family: monospace; color: var(--text-secondary);
             background: var(--bg-core); /* 遮挡线条 */
-            padding: 4px 0;
-            z-index: 1;
+            padding: 4px 0; z-index: 1;
         }
 
-        /* 论文卡片 */
         .pub-card {
             position: relative; padding: 24px; border-radius: 16px;
             background: var(--bg-secondary); border: 1px solid var(--border-color);
             text-decoration: none; color: inherit; overflow: hidden;
             transition: transform 0.2s;
-            margin-bottom: 30px; /* 卡片间距 */
+            margin-bottom: 30px;
         }
         .pub-card:hover { transform: translateX(5px); }
         .pub-card.award { border-left: 3px solid #f1c40f; background: linear-gradient(90deg, rgba(241, 196, 15, 0.05), transparent); }
@@ -273,7 +262,6 @@
             .sidebar { text-align: center; position: relative; top: 0; display: flex; flex-direction: column; align-items: center; }
             .frame-grid, .frame-grid:has(> :nth-child(4):last-child) { grid-template-columns: 1fr; }
             .art-frame { aspect-ratio: 2/1; }
-            /* 移动端调整时间轴 */
             .timeline-item { grid-template-columns: 40px 1fr; gap: 10px; }
         }
     </style>
@@ -315,9 +303,7 @@
                 <div class="live-time-widget">
                     <div class="dot"></div>
                     <span id="timeDisplay">Loading...</span>
-                    <p style="color: color-mix(in srgb, currentColor 60%, transparent);">
-                    (UTC +08:00)
-                    </p>
+                    <p style="color: color-mix(in srgb, currentColor 60%, transparent); margin-left: 5px;">(UTC+8)</p>
                 </div>
             </div>
         </aside>
@@ -347,7 +333,7 @@
                         <div class="frame-matting"></div>
                         <div class="frame-canvas"><div class="canvas-bg"></div></div>
                         <div class="frame-content">
-                            <div class="frame-label">Codebase</div>
+                            <div class="frame-label">GitHub</div>
                         </div>
                         <div class="frame-glass"></div>
                     </a>
@@ -356,7 +342,7 @@
                         <div class="frame-bezel"></div> <div class="frame-matting"></div>
                         <div class="frame-canvas"><div class="canvas-bg"></div></div>
                         <div class="frame-content">
-                            <div class="frame-label">Research</div>
+                            <div class="frame-label">Blog</div>
                         </div>
                         <div class="frame-glass"></div>
                     </a>
@@ -400,7 +386,6 @@
     </div>
 
     <script>
-        // BibTeX Logic
         const bibtexData = `
             @misc{zhao2025topologybehavioralsemanticsenhancing,
                 title={From Topology to Behavioral Semantics: Enhancing BGP Security by Understanding BGP's Language with LLMs}, 
@@ -425,14 +410,11 @@
                 });
                 entries.push(entry);
             }
-            
-            const html = entries.map((e, index) => {
+            const html = entries.map(e => {
                 const isAward = /award|best/i.test(e.note||"");
                 let authors = (e.author||"").split(' and ').map(a => 
                     MY_NAMES.some(n => a.includes(n)) ? `<strong><u>${a}</u></strong>` : a
                 ).join(", ");
-
-                // 生成时间轴结构
                 return `
                 <div class="timeline-item">
                     <div class="timeline-marker">
@@ -457,8 +439,12 @@
         setInterval(updateTime, 1000); updateTime();
 
         document.getElementById('themeBtn').addEventListener('click', () => {
-            const isLight = document.body.getAttribute('data-theme') === 'light';
-            document.body.setAttribute('data-theme', isLight ? 'dark' : 'light');
+            const current = document.body.getAttribute('data-theme');
+            if (current === 'dark') {
+                document.body.removeAttribute('data-theme');
+            } else {
+                document.body.setAttribute('data-theme', 'dark');
+            }
         });
 
         const frames = document.querySelectorAll('.art-frame');

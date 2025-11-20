@@ -271,7 +271,8 @@
                 <p class="bio-text">
                     &#9674 Received my <b>B.S. in Information Security</b> from <b>Zhejiang University</b> in 2025. <br>
                     <!-- 2025 - B.S. in Information Security, Zhejiang University <br> -->
-                    &#9674 PhD Candidate at Zhejiang University, expected to graduate in 2030. 
+                    &#9674 PhD Candidate at Zhejiang University, expected to graduate in 2030.  <br>
+                    &#9674 Please feel free to email me for communication on research. 
                 </p>
             </div>
 
@@ -423,7 +424,7 @@
 
         document.getElementById('themeBtn').addEventListener('click', () => {
             const isLight = document.body.getAttribute('data-theme') === 'light';
-            document.body.setAttribute('data-theme', isLight ? 'dark' : 'light');
+            document.body.setAttribute('data-theme', isLight ? 'light' : 'dark');
         });
 
         const frames = document.querySelectorAll('.art-frame');
@@ -434,8 +435,8 @@
                 const y = e.clientY - rect.top;
                 const centerX = rect.width / 2;
                 const centerY = rect.height / 2;
-                const rotateX = ((y - centerY) / centerY) * -45; 
-                const rotateY = ((x - centerX) / centerX) * 45;
+                const rotateX = ((y - centerY) / centerY) * -35; 
+                const rotateY = ((x - centerX) / centerX) * 35;
                 card.style.transform = `perspective(1500px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.03, 1.03, 1.03)`;
             });
             card.addEventListener('mouseleave', () => {

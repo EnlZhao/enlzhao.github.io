@@ -113,7 +113,7 @@
         .dot { width: 8px; height: 8px; background: #2ecc71; border-radius: 50%; animation: pulse 2s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
 
-        .tags-wrapper { display: flex; gap: 8px; flex-wrap: wrap; }
+        .tags-wrapper { font-family: monospace; display: flex; gap: 8px; flex-wrap: wrap; }
         .tag { font-size: 0.75rem; padding: 5px 12px; border-radius: 8px; border: 1px solid var(--border-color); color: var(--text-secondary); background: var(--bg-secondary); }
 
 
@@ -278,12 +278,13 @@
         }
 
         .pub-title { 
+            font-family: 'Times New Roman', Times, serif;
             font-size: 1.15rem; font-weight: 700; line-height: 1.4; margin-bottom: 10px; color: var(--text-primary); 
             transition: color 0.3s;
         }
         .pub-card:hover .pub-title { color: #2980b9; /* 悬停时标题微变色引导点击 */ }
 
-        .pub-info { font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.6; }
+        .pub-info { font-family: 'Times New Roman', Times, serif; font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.6; }
         
         .pub-card .tag-row .tag { 
             margin-right: 6px; 
@@ -359,7 +360,7 @@
                 <div class="info-module">
                     <div class="module-title">About Me</div>
                 </div>
-                <ul class="bio-list">
+                <ul class="bio-list" style="font-family: 'Georgia', serif;">
                     <li>Received my <b>B.S. in Information Security</b> from <b>Zhejiang University</b> in 2025.</li>
                     <li><b>PhD Candidate</b> at Zhejiang University, expected to graduate in 2030.</li>
                     <li>My research focuses on network security and large language model applications.</li>
@@ -469,13 +470,14 @@
                     </div>
                     <a href="${e.url}" target="_blank" class="pub-card ${isAward?'award':''}">
                         <div class="pub-title">${e.title}</div>
-                        <div class="pub-info">${authors} · ${e.year}</div>
+                        <div class="pub-info">${authors}</div>
                         <div class="tag-row"><span class="tag">${e.booktitle||e.journal||"Preprint"}</span>${isAward?`<span class="tag highlight">${e.note}</span>`:''}</div>
                     </a>
                 </div>`;
             }).join("");
             document.getElementById('pub-container').innerHTML = html;
         }
+        // <div class="pub-info">${authors} · ${e.year}</div>
         renderPubs();
 
         function updateTime() {

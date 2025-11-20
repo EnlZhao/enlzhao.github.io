@@ -15,11 +15,6 @@
             --text-primary: #1d1d1f;
             --text-secondary: #6e6e73;
             --border-color: rgba(0, 0, 0, 0.08);
-            
-            /* 卡片/铭牌通用高光与阴影 (白天) */
-            --card-shadow: 0 4px 12px rgba(0,0,0,0.03), 0 1px 2px rgba(0,0,0,0.02);
-            --card-shadow-hover: 0 12px 24px rgba(0,0,0,0.06), 0 4px 8px rgba(0,0,0,0.04);
-            --card-highlight: inset 0 1px 0 rgba(255,255,255,0.8); /* 顶部高光 */
 
             /* 白天模式：浮雕金属材质 */
             --bezel-base: #e0e0e0;
@@ -31,7 +26,7 @@
             /* 通用配置 */
             --font-main: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
             
-            /* 艺术画芯配色 */
+            /* 艺术画芯配色 (通用) */
             --art-github: radial-gradient(circle at 30% 30%, #2c3e50 0%, #0a0a0a 100%);
             --art-scholar: radial-gradient(circle at 70% 70%, #e67e22 0%, #8e44ad 100%);
             --art-notebook: radial-gradient(circle at 50% 50%, #27ae60 0%, #16a085 100%);
@@ -41,16 +36,11 @@
         /* === 覆盖：暗黑模式配色 (Dark Mode) === */
         [data-theme="dark"] {
             --bg-core: #0d0d0d;
-            --bg-secondary: #1c1c1e;
-            --text-primary: #f5f5f7;
-            --text-secondary: #86868b;
+            --bg-secondary: #1a1a1a;
+            --text-primary: #e0e0e0;
+            --text-secondary: #888;
             --border-color: rgba(255, 255, 255, 0.1);
             
-            /* 卡片/铭牌通用高光与阴影 (黑夜) */
-            --card-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            --card-shadow-hover: 0 12px 30px rgba(0,0,0,0.5);
-            --card-highlight: inset 0 1px 0 rgba(255,255,255,0.1);
-
             /* 暗黑模式：浮雕金属材质 */
             --bezel-base: #2b2b2b; 
             --bezel-highlight: #555;
@@ -67,7 +57,6 @@
             font-family: var(--font-main);
             min-height: 100vh;
             overflow-x: hidden;
-            /* 噪点背景 */
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
         }
 
@@ -84,7 +73,7 @@
             width: 100px; height: 100px; border-radius: 30px;
             background-size: cover; background-position: center;
             margin-bottom: 25px;
-            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.2); 
+            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.2); /* 阴影调淡一点适应白底 */
             border: 1px solid var(--border-color);
         }
 
@@ -118,19 +107,19 @@
         .tag { font-size: 0.75rem; padding: 5px 12px; border-radius: 8px; border: 1px solid var(--border-color); color: var(--text-secondary); background: var(--bg-secondary); }
 
 
-        /* --- 4. 右侧内容与自适应布局逻辑 --- */
+        /* --- 4. 右侧内容 --- */
         .content-area { display: flex; flex-direction: column; gap: 60px; }
         
-        /* About List Style */
         .bio-list {
-            list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px;
+            list-style: none; 
+            padding: 0; margin: 0;
+            display: flex; flex-direction: column; gap: 12px;
         }
         .bio-list li {
             position: relative; padding-left: 24px; line-height: 1.7; color: var(--text-primary); opacity: 0.9; font-size: 1.05rem;
         }
         .bio-list li::before { content: '◈'; position: absolute; left: 0; top: 1px; color: var(--text-secondary); font-size: 0.9em; }
 
-        /* Frame Grid */
         .frame-grid {
             display: grid; gap: 30px; perspective: 2000px;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -140,7 +129,7 @@
         /* --- 5. 浮雕金属画框 (Embossed Metal Frame) --- */
         .art-frame {
             position: relative; aspect-ratio: 1 / 1.2; 
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); 
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); /* 白天模式阴影稍微调淡 */
             transform-style: preserve-3d; cursor: pointer;
             transition: transform 0.1s linear; 
             border-radius: 16px; overflow: hidden;
@@ -204,7 +193,7 @@
         .art-frame:hover .frame-glass { opacity: 1; }
         .art-frame:hover .frame-bezel { filter: brightness(1.15); }
         
-        /* --- 6. 时间轴与新颖卡片设计 (New Design) --- */
+        /* --- 6. 时间轴论文列表 --- */
         .pub-stack { display: flex; flex-direction: column; gap: 0; }
 
         .timeline-item {
@@ -233,9 +222,10 @@
         .timeline-dot {
             width: 10px; height: 10px;
             border-radius: 50%;
-            background: var(--bg-core);
+            background: var(--bg-core); /* 跟随背景色 */
             border: 2px solid var(--text-secondary);
-            z-index: 1; margin-bottom: 8px;
+            z-index: 1;
+            margin-bottom: 8px;
             transition: all 0.3s;
         }
         .timeline-dot.award {
@@ -244,59 +234,23 @@
 
         .timeline-year {
             font-size: 0.8rem; font-family: monospace; color: var(--text-secondary);
-            background: var(--bg-core); padding: 4px 0; z-index: 1;
+            background: var(--bg-core); /* 遮挡线条 */
+            padding: 4px 0; z-index: 1;
         }
 
-        /* === 核心更新：新颖的 Publication Card 设计 === */
         .pub-card {
-            position: relative; 
-            padding: 28px; 
-            border-radius: 20px;
-            background: var(--bg-secondary); 
-            /* 关键：使用多层阴影模拟微浮雕/厚卡纸效果 */
-            box-shadow: var(--card-shadow), var(--card-highlight);
-            border: 1px solid transparent; /* 预留边框位置 */
-            text-decoration: none; color: inherit; 
-            overflow: hidden;
-            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); /* 丝滑的过渡 */
-            margin-bottom: 40px;
-            /* 隐形边框 */
-            background-clip: padding-box; 
+            position: relative; padding: 24px; border-radius: 16px;
+            background: var(--bg-secondary); border: 1px solid var(--border-color);
+            text-decoration: none; color: inherit; overflow: hidden;
+            transition: transform 0.2s;
+            margin-bottom: 30px;
         }
-        
-        /* 悬停效果：变亮 + 上浮 */
-        .pub-card:hover { 
-            transform: translateY(-4px); /* 明显上浮 */
-            box-shadow: var(--card-shadow-hover), var(--card-highlight);
-            filter: brightness(1.02); /* 微微变亮，如铭牌受光 */
-            border-color: var(--border-color);
-        }
-
-        /* 获奖卡片的特殊金边 */
-        .pub-card.award { 
-            border-left: 4px solid #f1c40f; 
-            background: linear-gradient(90deg, rgba(241, 196, 15, 0.03) 0%, var(--bg-secondary) 30%);
-        }
-
-        .pub-title { 
-            font-size: 1.15rem; font-weight: 700; line-height: 1.4; margin-bottom: 10px; color: var(--text-primary); 
-            transition: color 0.3s;
-        }
-        .pub-card:hover .pub-title { color: #2980b9; /* 悬停时标题微变色引导点击 */ }
-
-        .pub-info { font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.6; }
-        
-        .pub-card .tag-row .tag { 
-            margin-right: 6px; 
-            background: rgba(128,128,128,0.1); 
-            border: none;
-            font-weight: 500;
-        } 
-        .pub-card .tag-row .tag.highlight { 
-            background: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%); 
-            color: #fff; 
-            box-shadow: 0 2px 4px rgba(241, 196, 15, 0.3);
-        }
+        .pub-card:hover { transform: translateX(5px); }
+        .pub-card.award { border-left: 3px solid #f1c40f; background: linear-gradient(90deg, rgba(241, 196, 15, 0.05), transparent); }
+        .pub-title { font-size: 1.1rem; font-weight: 600; line-height: 1.4; margin-bottom: 8px; color: var(--text-primary); }
+        .pub-info { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 12px; }
+        .pub-card .tag-row .tag { margin-right: 5px; background: rgba(255,255,255,0.05); } 
+        .pub-card .tag-row .tag.highlight { background: #f1c40f; color: #000; font-weight: bold; }
 
 
         /* --- 7. Footer --- */
@@ -341,6 +295,18 @@
             <div class="info-module">
                 <div class="module-title">News</div>
                 <ul class="news-list">
+                    <!-- <li class="news-item">
+                            <span class="news-date">Nov 2025</span>
+                            <span class="news-content">One paper accepted to arXiv!</span>
+                        </li> -->
+                    <!-- <li class="news-item">
+                            <span class="news-date">Oct 2025</span>
+                            <span class="news-content">Started internship at Research Lab.</span>
+                        </li>
+                    <li class="news-item">
+                        <span class="news-date">Sep 2025</span>
+                        <span class="news-content">Attended the annual academic conference.</span>
+                        </li> -->
                     </ul>
             </div>
 
@@ -379,7 +345,7 @@
                         <div class="frame-matting"></div>
                         <div class="frame-canvas"><div class="canvas-bg"></div></div>
                         <div class="frame-content">
-                            <div class="frame-label">Codebase</div>
+                            <div class="frame-label">GitHub</div>
                         </div>
                         <div class="frame-glass"></div>
                     </a>
@@ -388,7 +354,7 @@
                         <div class="frame-bezel"></div> <div class="frame-matting"></div>
                         <div class="frame-canvas"><div class="canvas-bg"></div></div>
                         <div class="frame-content">
-                            <div class="frame-label">Research</div>
+                            <div class="frame-label">Blog</div>
                         </div>
                         <div class="frame-glass"></div>
                     </a>

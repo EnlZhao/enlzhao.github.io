@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alex Chen | Portfolio</title>
+    <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    
+    <style>
+        /* --- 1. 全局变量 --- */
+        :root {
+            --bg-core: #0d0d0d;
+            --bg-secondary: #1a1a1a;
+            --text-primary: #e0e0e0;
+            --text-secondary: #888;
+            --border-color: rgba(255, 255, 255, 0.1);
+            
+            /* 浮雕金属边框材质 */
+            --bezel-base: #2b2b2b; 
+            --bezel-highlight: #555;
+            --bezel-shadow: #000;
+            --bezel-inner-shadow: rgba(0,0,0,0.7);
+            --bezel-light-edge: rgba(255,255,255,0.15);
+
+            --font-main: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+        }
+
+        [data-theme="light"] {
+            --bg-core: #f5f5f7;
+            --bg-secondary: #ffffff;
+            --text-primary: #1d1d1f;
+            --text-secondary: #6e6e73;
+            --border-color: rgba(0, 0, 0, 0.08);
+
+            --bezel-base: #e0e0e0;
+            --bezel-highlight: #fff;
+            --bezel-shadow: #b0b0b0;
+            --bezel-inner-shadow: rgba(0,0,0,0.1);
+            --bezel-light-edge: rgba(255,255,255,0.8);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; transition: background 0.5s ease, color 0.5s ease; }
+
+        body {
+            background-color: var(--bg-core);
+            color: var(--text-primary);
+            font-family: var(--font-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
+        }
+
+        /* --- 2. 布局 --- */
+        .layout {
+            display: grid; grid-template-columns: 300px 1fr;
+            max-width: 1200px; margin: 0 auto; padding: 80px 40px; gap: 60px;
+        }
+
+        /* --- 3. 左侧栏 (Sidebar) --- */
+        .sidebar { position: sticky; top: 60px; height: fit-content; z-index: 10; }
+
+        .avatar-box {
+            width: 100px; height: 100px; border-radius: 30px;
+            background-size: cover; background-position: center;
+            margin-bottom: 25px;
+            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5);
+            border: 1px solid var(--border-color);
+        }
+
+        .name-title {
+            font-size: 2.5rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 5px;
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+
+        .role-text { font-family: 'Georgia', serif; font-style: italic; color: var(--text-secondary); margin-bottom: 30px; font-size: 1.1rem; }
+
+        .info-module { margin-bottom: 30px; }
+        .module-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--text-secondary); margin-bottom: 15px; opacity: 0.7; }
+
+        .bio-text { line-height: 1.7; color: var(--text-primary); opacity: 0.9; font-size: 0.95rem; }
+
+        .live-time-widget {
+            display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px;
+            background: var(--bg-secondary); border-radius: 12px; border: 1px solid var(--border-color);
+            font-size: 0.8rem; color: var(--text-secondary); font-family: monospace;
+        }
+        .dot { width: 8px; height: 8px; background: #2ecc71; border-radius: 50%; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+
+        .tags-wrapper { display: flex; gap: 8px; flex-wrap: wrap; }
+        .tag { font-size: 0.75rem; padding: 5px 12px; border-radius: 8px; border: 1px solid var(--border-color); color: var(--text-secondary); background: var(--bg-secondary); }
+
+
+        /* --- 4. 右侧内容与自适应布局逻辑 --- */
+        .content-area { display: flex; flex-direction: column; gap: 80px; }
+
+        /* 核心布局逻辑：Frame Grid 
+           使用 CSS :has() 实现数量感知
+        */
+        .frame-grid {
+            display: grid;
+            gap: 30px;
+            perspective: 2000px;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+
+        /* [关键逻辑] 如果恰好有4个子元素：强制 4列，使其变小放一行 */
+        .frame-grid:has(> :nth-child(4):last-child) {
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        /* --- 5. 浮雕金属画框 (Embossed Metal Frame) --- */
+        .art-frame {
+            position: relative; 
+            aspect-ratio: 1 / 1.2; 
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6); 
+            transform-style: preserve-3d; cursor: pointer;
+            transition: transform 0.1s linear; 
+            border-radius: 16px; /* 统一的圆角 */
+            overflow: hidden; /* 关键：裁剪所有内部元素的超出部分 */
+        }
+
+        /* A. 浮雕边框层 (The Bezel) */
+        .frame-bezel {
+            position: absolute; inset: 0;
+            background: var(--bezel-base);
+            border-radius: 16px; /* 保持一致 */
+            /* 调整 box-shadow 顺序和值，修复尖角并优化浮雕感 */
+            box-shadow: 
+                /* 内部深凹槽阴影 */
+                inset 0 0 15px 2px var(--bezel-inner-shadow),
+                /* 顶部和左侧的高光斜面 */
+                inset 2px 2px 3px var(--bezel-highlight),
+                inset 4px 4px 8px var(--bezel-highlight),
+                /* 底部和右侧的阴影斜面 */
+                inset -2px -2px 3px var(--bezel-shadow),
+                inset -4px -4px 8px var(--bezel-shadow),
+                /* 最外层轮廓的微弱高光，与 border-radius 更好地融合 */
+                0 0 0 1px var(--bezel-light-edge);
+            transform: translateZ(0px);
+        }
+        
+        /* B. 衬纸 (Matting) */
+        .frame-matting {
+            position: absolute; inset: 12px;
+            background: var(--bg-secondary);
+            border-radius: 10px; 
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+            transform: translateZ(5px);
+        }
+
+        /* C. 画芯 (Canvas) */
+        .frame-canvas {
+            position: absolute; inset: 24px;
+            background: #000;
+            border-radius: 6px;
+            overflow: hidden; /* 画布内溢出也裁剪 */
+            box-shadow: 
+                inset 0 0 20px rgba(0,0,0,0.6),
+                0 0 0 1px rgba(255,255,255,0.1);
+            transform: translateZ(10px);
+        }
+
+        /* 画芯背景 (莫奈笔触动画 - 现在是具体图像) */
+        .canvas-bg {
+            position: absolute; inset: 0; 
+            opacity: 1; /* 莫奈油画主体，不透明 */
+            background-size: cover; /* 覆盖整个区域 */
+            background-position: center; /* 居中显示 */
+            filter: grayscale(0%) brightness(100%) contrast(100%); /* 保持原画作色彩 */
+            transition: filter 0.3s ease; /* 悬停时滤镜过渡 */
+        }
+        .art-frame:hover .canvas-bg {
+             filter: brightness(110%) contrast(105%) saturate(110%); /* 悬停时色彩更鲜明 */
+        }
+        
+        /* 莫奈风格油画图片 */
+        .f-github .canvas-bg { 
+            background-image: url('./fig/github.png'); 
+        }
+        .f-scholar .canvas-bg { 
+            background-image: url('./fig/blog.png'); 
+        }
+        .f-notebook .canvas-bg { 
+            background-image: url('./fig/notebook.png'); 
+        }
+        .f-email .canvas-bg { 
+            background-image: url('./fig/email.png'); 
+        }
+
+        /* D. 移除抽象SVG图标，让油画成为主体 */
+        .frame-content {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-end; /* 标签在下方 */
+            padding-bottom: 20px; /* 给标签留出空间 */
+            transform: translateZ(30px); 
+            z-index: 10;
+        }
+
+        /* 移除 icon-relief 的样式，因为它不再承载 SVG */
+        .icon-relief { display: none; } 
+
+        .frame-label {
+            font-size: 0.9rem; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: 0.12em;
+            text-shadow: 0 0 8px rgba(0,0,0,0.8), 0 0 3px rgba(0,0,0,1); /* 更重的文字阴影，确保在油画上可见 */
+            background: rgba(0,0,0,0.5); padding: 6px 14px; border-radius: 6px; /* 标签略大 */
+            border: 1px solid rgba(255,255,255,0.2); /* 边框更明显 */
+            transform: translateZ(2px); 
+            backdrop-filter: blur(2px); /* 标签也带一点模糊，融入画作 */
+        }
+
+        /* E. 玻璃反光 (Glass Glare) */
+        .frame-glass {
+            position: absolute; inset: 24px; border-radius: 6px;
+            background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.15) 45%, transparent 50%);
+            pointer-events: none; transform: translateZ(35px); z-index: 20;
+            mix-blend-mode: screen; opacity: 0; transition: opacity 0.3s;
+        }
+        .art-frame:hover .frame-glass { opacity: 1; }
+
+        /* 悬停时边框变亮 */
+        .art-frame:hover .frame-bezel { filter: brightness(1.15); }
+        
+        /* --- 6. 论文列表 --- */
+        .pub-stack { display: flex; flex-direction: column; gap: 16px; }
+        .pub-card {
+            position: relative; padding: 24px; border-radius: 16px;
+            background: var(--bg-secondary); border: 1px solid var(--border-color);
+            text-decoration: none; color: inherit; overflow: hidden;
+            transition: transform 0.2s;
+        }
+        .pub-card:hover { transform: translateX(5px); }
+        .pub-card.award { border-left: 3px solid #f1c40f; background: linear-gradient(90deg, rgba(241, 196, 15, 0.05), transparent); }
+        .pub-title { font-size: 1.1rem; font-weight: 600; line-height: 1.4; margin-bottom: 8px; color: var(--text-primary); }
+        .pub-info { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 12px; }
+        .pub-card .tag-row .tag { margin-right: 5px; background: rgba(255,255,255,0.05); } 
+        .pub-card .tag-row .tag.highlight { background: #f1c40f; color: #000; font-weight: bold; }
+
+
+        /* --- 7. Footer --- */
+        .footer { margin-top: 60px; padding-top: 30px; border-top: 1px solid var(--border-color); color: var(--text-secondary); font-size: 0.85rem; display: flex; justify-content: space-between;}
+        
+        /* Mobile Override */
+        @media(max-width: 850px) {
+            .layout { grid-template-columns: 1fr; padding: 40px 20px; }
+            .sidebar { text-align: center; position: relative; top: 0; display: flex; flex-direction: column; align-items: center; }
+            .frame-grid, .frame-grid:has(> :nth-child(4):last-child) { grid-template-columns: 1fr; }
+            .art-frame { aspect-ratio: 2/1; }
+        }
+    </style>
+</head>
+<body>
+    <div style="position: absolute; top: 30px; right: 40px; z-index: 100;">
+        <button id="themeBtn" style="background:none; border:none; color:var(--text-primary); cursor:pointer; padding:10px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="5"></circle>
+                <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+            </svg>
+        </button>
+    </div>
+
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="avatar-box" style="background-image: url('./fig/ava.png');"></div>
+            <h1 class="name-title">Heng Zhao</h1>
+            <div class="role-text">PhD Candidate</div>
+            
+            <!-- <div class="info-module">
+                <div class="module-title">About</div>
+                <p class="bio-text">
+                    Exploring the boundaries of LLM & Cybersecurity. <br>
+                    Passionate about AI safety and system robustness.
+                </p>
+            </div> -->
+
+            <div class="info-module">
+                <div class="module-title">Interests</div>
+                <div class="tags-wrapper">
+                    <span class="tag">Cybersecurity</span>
+                    <span class="tag">LLM Security</span>
+                    <span class="tag">LLM System</span>
+                    <span class="tag">Sports</span>
+                </div>
+            </div>
+
+            <div class="info-module">
+                <div class="module-title">Status</div>
+                <div class="live-time-widget">
+                    <div class="dot"></div>
+                    <span id="timeDisplay">Loading...</span>
+                </div>
+            </div>
+        </aside>
+
+        <main class="content-area">
+            <section>
+                <div class="info-module">
+                    <div class="module-title">Collections</div>
+                </div>
+                
+                <div class="frame-grid">
+                    
+                    <a href="https://github.com/enlzhao/" target="_blank" class="art-frame f-github">
+                        <div class="frame-bezel"></div>
+                        <div class="frame-matting"></div>
+                        <div class="frame-canvas"><div class="canvas-bg"></div></div>
+                        <div class="frame-content">
+                            <div class="frame-label">Codebase</div>
+                        </div>
+                        <div class="frame-glass"></div>
+                    </a>
+
+                    <a href="https://enlzhao.github.io/Blog" target="_blank" class="art-frame f-scholar">
+                        <div class="frame-bezel"></div> <div class="frame-matting"></div>
+                        <div class="frame-canvas"><div class="canvas-bg"></div></div>
+                        <div class="frame-content">
+                            <div class="frame-label">Research</div>
+                        </div>
+                        <div class="frame-glass"></div>
+                    </a>
+
+                    <a href="https://enlzhao.github.io/Notebook" target="_blank" class="art-frame f-notebook">
+                        <div class="frame-bezel"></div>
+                        <div class="frame-matting"></div>
+                        <div class="frame-canvas"><div class="canvas-bg"></div></div>
+                        <div class="frame-content">
+                            <div class="frame-label">Notebook</div>
+                        </div>
+                        <div class="frame-glass"></div>
+                    </a>
+
+                    <a href="mailto:hengzhao02@zju.edu.cn" class="art-frame f-email">
+                        <div class="frame-bezel"></div> <div class="frame-matting"></div>
+                        <div class="frame-canvas"><div class="canvas-bg"></div></div>
+                        <div class="frame-content">
+                            <div class="frame-label">Contact</div>
+                        </div>
+                        <div class="frame-glass"></div>
+                    </a>
+                    
+                </div>
+            </section>
+
+            <section>
+                <div class="info-module" style="margin-top: 40px;">
+                    <div class="module-title">Publications</div>
+                </div>
+                <div id="pub-container" class="pub-stack"></div>
+            </section>
+
+            <footer class="footer">
+                <div>&copy; 2025; Theme designed by Gemini-3</div>
+                <div>
+                    <span id="busuanzi_value_site_pv">--</span> PV
+                </div>
+            </footer>
+        </main>
+    </div>
+
+    <script>
+        // BibTeX Logic (Same as before)
+        const bibtexData = `
+            @misc{zhao2025topologybehavioralsemanticsenhancing,
+                title={From Topology to Behavioral Semantics: Enhancing BGP Security by Understanding BGP's Language with LLMs}, 
+                author={Heng Zhao and Ruoyu Wang and Tianhang Zheng and Qi Li and Bo Lv and Yuyi Wang and Wenliang Du},
+                year={2025},
+                archivePrefix={arXiv},
+                note={Preprint},
+                url={https://arxiv.org/abs/2511.14467}, 
+            }
+        `;
+            // @inproceedings{chen2024monet,
+            //     title={Impressionist Rendering: Neural Style Transfer for 3D Geometry},
+            //     author={Alex Chen and Claude Monet},
+            //     booktitle={CVPR},
+            //     year={2024},
+            //     note={Best Paper Award},
+            //     url={#}
+            // }
+            // @article{chen2025notebook,
+            //     title={The Digital Garden: Knowledge Graphs in the Age of AI},
+            //     author={Alex Chen},
+            //     journal={ArXiv},
+            //     year={2025},
+            //     note={Preprint},
+            //     url={#}
+            // }
+        const MY_NAMES = ["Heng Zhao", "Zhao, Heng"];
+
+        function renderPubs() {
+            const entries = [];
+            const regex = /@(\w+)\s*\{\s*([^,]*),\s*([\s\S]*?)\s*\}(?=\s*@|\s*$)/g;
+            let match;
+            while ((match = regex.exec(bibtexData)) !== null) {
+                const entry = { type: match[1] };
+                const content = match[3];
+                content.replace(/(\w+)\s*=\s*(?:\{([\s\S]*?)\}|"([\s\S]*?)"|(\w+)),?/g, (m, k, v1, v2, v3) => {
+                    entry[k.toLowerCase()] = (v1||v2||v3||"").replace(/\s+/g,' ').trim();
+                });
+                entries.push(entry);
+            }
+            const html = entries.map(e => {
+                const isAward = /award|best/i.test(e.note||"");
+                let authors = (e.author||"").split(' and ').map(a => 
+                    MY_NAMES.some(n => a.includes(n)) ? `<strong><u>${a}</u></strong>` : a
+                ).join(", ");
+                return `<a href="${e.url}" target="_blank" class="pub-card ${isAward?'award':''}">
+                    <div class="pub-title">${e.title}</div>
+                    <div class="pub-info">${authors} · ${e.year}</div>
+                    <div class="tag-row"><span class="tag">${e.booktitle||e.journal||"Preprint"}</span>${isAward?`<span class="tag highlight">${e.note}</span>`:''}</div>
+                </a>`;
+            }).join("");
+            document.getElementById('pub-container').innerHTML = html;
+        }
+        renderPubs();
+
+        function updateTime() {
+            document.getElementById('timeDisplay').textContent = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+        }
+        setInterval(updateTime, 1000); updateTime();
+
+        document.getElementById('themeBtn').addEventListener('click', () => {
+            const isLight = document.body.getAttribute('data-theme') === 'light';
+            document.body.setAttribute('data-theme', isLight ? 'dark' : 'light');
+        });
+
+        const frames = document.querySelectorAll('.art-frame');
+        frames.forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                const rotateX = ((y - centerY) / centerY) * -45; 
+                const rotateY = ((x - centerX) / centerX) * 45;
+                card.style.transform = `perspective(1500px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.03, 1.03, 1.03)`;
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'perspective(1500px) rotateX(0) rotateY(0) scale3d(1, 1, 1)';
+            });
+        });
+    </script>
+</body>
+</html>

@@ -98,7 +98,7 @@
         .info-module { margin-bottom: 30px; }
         .module-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--text-secondary); margin-bottom: 15px; opacity: 0.7; }
 
-        .globe-container { width: 100%; display: flex; justify-content: center; align-items: center; overflow: hidden;}
+        .globe-container { width: 60%; display: flex; justify-content: left; align-items: center; overflow: hidden;}
 
         /* News 列表样式 */
         .news-list { list-style: none; display: flex; flex-direction: column; gap: 16px; }
@@ -138,7 +138,6 @@
         }
         .frame-grid:has(> :nth-child(4):last-child) { grid-template-columns: repeat(4, 1fr); }
 
-        /* --- 5. 浮雕金属画框 (Embossed Metal Frame) --- */
         .art-frame {
             position: relative; aspect-ratio: 1 / 1.2; 
             box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); 
@@ -248,7 +247,6 @@
             background: var(--bg-core); padding: 4px 0; z-index: 1;
         }
 
-        /* === 核心更新：新颖的 Publication Card 设计 === */
         .pub-card {
             position: relative; 
             padding: 28px; 
@@ -259,7 +257,7 @@
             border: 1px solid transparent; 
             text-decoration: none; color: inherit; 
             overflow: hidden;
-            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); /* 丝滑的过渡 */
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); 
             margin-bottom: 40px;
             /* 隐形边框 */
             background-clip: padding-box; 

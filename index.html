@@ -98,6 +98,8 @@
         .info-module { margin-bottom: 30px; }
         .module-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--text-secondary); margin-bottom: 15px; opacity: 0.7; }
 
+        .globe-container { width: 100%; display: flex; justify-content: center; align-items: center; overflow: hidden;}
+
         /* News 列表样式 */
         .news-list { list-style: none; display: flex; flex-direction: column; gap: 16px; }
         .news-item { display: flex; flex-direction: column; gap: 4px; position: relative; padding-left: 12px; border-left: 2px solid var(--border-color); transition: border-color 0.3s; }
@@ -355,7 +357,7 @@
 
             <div class="info-module">
                 <div class="module-title">Visitor Maps</div>
-                <div style="transform: scale(0.6); transform-origin: top center; margin: -40px 0 -40px 0;">
+                <div class="globe-container">
                     <script type="text/javascript" id="clstr_globe" src="//clustrmaps.com/globe.js?d=q9oSDATgdmVav_DVTA0kvkA2DeD_Ce9YMwYPKOZRmos"></script>
                 </div>
             </div>

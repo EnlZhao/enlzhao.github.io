@@ -1,21 +1,19 @@
 """
-Refresh pubs.bib from Google Scholar.
+Refresh pubs.bib from Google Scholar via SerpApi.
 
 Weekly / on-demand:
-  1. Fetch the Google Scholar profile page.
+  1. Fetch all Scholar publications for SCHOLAR_USER via SerpApi
+     (which avoids Google Scholar's IP block on GitHub Actions' AWS IPs).
   2. Diff against the current pubs.bib.
-  3. For each new paper, fetch BibTeX from arxiv (search by title), strip to the
-     minimal field set (author, title, year, url, note), and append to pubs.bib.
+  3. For each new paper, fetch BibTeX from arxiv, strip to the minimal field set
+     (author, title, year, url, note), and append.
   4. For each existing paper whose Scholar venue is a real conference/journal and
      note={Preprint}, replace the note with the cleaned venue and add journal={venue}.
-  5. Write pubs.bib only if it actually changed; let the workflow decide what to do.
+  5. Write pubs.bib sorted in reverse chronological order (newest first).
+  6. Only commit if the file actually changed; let the workflow open a PR.
 
-The script uses string-level editing so that the user's hand-formatted BibTeX
-is preserved; only the affected fields are rewritten.
-
-Failure mode: if Scholar scraping fails after retries, log a warning via
-GitHub Actions' ::warning:: annotation and exit 0 so the workflow can still
-push a PR on a no-op, or skip cleanly.
+Failure mode: any error (missing key, SerpApi down, parse fail) logs a warning
+via `::warning::` and exits 0 so the workflow never breaks.
 """
 
 from __future__ import annotations
@@ -33,8 +31,12 @@ except ImportError:  # pragma: no cover
     sys.stderr.write("bibtexparser is required. pip install -r .github/scripts/requirements.txt\n")
     raise
 
+try:
+    from serpapi import GoogleSearch  # type: ignore[import-unresolved]
+except ImportError:  # pragma: no cover
+    GoogleSearch = None  # type: ignore[assignment]
+
 import requests
-from bs4 import BeautifulSoup
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -43,23 +45,23 @@ from bs4 import BeautifulSoup
 SCHOLAR_USER = os.environ.get("SCHOLAR_USER", "rPclf40AAAAJ")
 PUBS_BIB_PATH = Path(os.environ.get("PUBS_BIB_PATH", "pubs.bib"))
 GITHUB_OUTPUT = os.environ.get("GITHUB_OUTPUT")
-
-USER_AGENT = (
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-    "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
-)
-
-SCHOLAR_URL = f"https://scholar.google.com/citations?user={SCHOLAR_USER}&hl=en&oi=sra"
+SERPAPI_API_KEY = os.environ.get("SERPAPI_API_KEY", "")
 
 ARXIV_API = "http://export.arxiv.org/api/query"
 ARXIV_BIBTEX = "https://arxiv.org/bibtex/{arxiv_id}"
 
-REQ_TIMEOUT = 20  # seconds
-RETRY_ATTEMPTS = 3
-RETRY_BACKOFF = 30  # seconds
-
 NOTE_INDENT = "      "  # 6-space indent for entry fields
 
+# SerpApi request config
+SERPAPI_PAGE_SIZE = 100
+SERPAPI_RETRY_ATTEMPTS = 3
+SERPAPI_RETRY_BACKOFF = 15  # seconds, linear backoff
+SERPAPI_PAGE_THROTTLE = 2  # seconds between pages
+
+# arxiv fetch config
+ARXIV_RETRY_ATTEMPTS = 3
+ARXIV_RETRY_BACKOFF = 30
+ARXIV_TIMEOUT = 20
 
 # ---------------------------------------------------------------------------
 # Logging helpers
@@ -88,40 +90,69 @@ def set_output(name: str, value: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# HTTP helpers with retry
+# SerpApi — Scholar fetch
 # ---------------------------------------------------------------------------
 
 
-def http_get(url: str, params: Optional[dict] = None, attempts: int = RETRY_ATTEMPTS) -> Optional[requests.Response]:
-    """GET with retries on 429 / 5xx / network errors. Returns None on final failure."""
-    last_exc: Optional[Exception] = None
-    for attempt in range(1, attempts + 1):
-        try:
-            resp = requests.get(
-                url,
-                params=params,
-                headers={"User-Agent": USER_AGENT, "Accept-Language": "en-US,en;q=0.9"},
-                timeout=REQ_TIMEOUT,
-            )
-            if resp.status_code == 429 or 500 <= resp.status_code < 600:
-                last_exc = RuntimeError(f"HTTP {resp.status_code}")
-                log(f"[retry] {url} -> {resp.status_code} (attempt {attempt}/{attempts})")
-            elif resp.status_code == 200:
-                return resp
-            else:
-                gh_warning(f"Non-retryable HTTP {resp.status_code} fetching {url}")
-                return None
-        except requests.RequestException as e:
-            last_exc = e
-            log(f"[retry] {url} -> {type(e).__name__}: {e} (attempt {attempt}/{attempts})")
-        if attempt < attempts:
-            time.sleep(RETRY_BACKOFF * attempt)  # linear backoff
-    gh_warning(f"All {attempts} attempts failed for {url}: {last_exc}")
-    return None
+def fetch_scholar_author(author_id: str) -> list[dict]:
+    """Fetch all publications for an author via SerpApi.
+
+    Paginates with `start` until a page returns fewer than `num` articles.
+    Returns the raw `articles` list. Returns [] on any failure (with a warning).
+    """
+    if not SERPAPI_API_KEY:
+        gh_warning("SERPAPI_API_KEY not set; skipping this run.")
+        return []
+    if GoogleSearch is None:
+        gh_warning("google-search-results not installed; skipping this run.")
+        return []
+
+    all_articles: list[dict] = []
+    start = 0
+    while True:
+        params = {
+            "engine": "google_scholar_author",
+            "author_id": author_id,
+            "hl": "en",
+            "num": SERPAPI_PAGE_SIZE,
+            "start": start,
+            "api_key": SERPAPI_API_KEY,
+        }
+
+        resp = None
+        last_exc: Optional[Exception] = None
+        for attempt in range(1, SERPAPI_RETRY_ATTEMPTS + 1):
+            try:
+                resp = GoogleSearch(params).get_dict()
+                break
+            except Exception as e:  # network, parse, auth — anything
+                last_exc = e
+                log(f"[retry] SerpApi attempt {attempt}/{SERPAPI_RETRY_ATTEMPTS} failed: {e}")
+                if attempt < SERPAPI_RETRY_ATTEMPTS:
+                    time.sleep(SERPAPI_RETRY_BACKOFF * attempt)
+        if resp is None:
+            gh_warning(f"All SerpApi attempts failed: {last_exc}")
+            return all_articles or []
+
+        if "error" in resp:
+            gh_warning(f"SerpApi returned error: {resp['error']}; skipping this run.")
+            return all_articles or []
+
+        articles = resp.get("articles") or []
+        if not articles:
+            break
+        all_articles.extend(articles)
+        if len(articles) < SERPAPI_PAGE_SIZE:
+            break
+        start += SERPAPI_PAGE_SIZE
+        time.sleep(SERPAPI_PAGE_THROTTLE)
+
+    log(f"SerpApi returned {len(all_articles)} articles for {author_id}")
+    return all_articles
 
 
 # ---------------------------------------------------------------------------
-# Parsing — Google Scholar
+# Article normalization
 # ---------------------------------------------------------------------------
 
 
@@ -130,56 +161,44 @@ ARXIV_ID_BRACKET_RE = re.compile(r"\[(?:arXiv:)?(\d{4}\.\d{4,5})\]", re.IGNORECA
 ARXIV_ID_FROM_ATOM_RE = re.compile(r"<id>\s*http://arxiv\.org/abs/([\d.]+)(v\d+)?\s*</id>")
 
 
-def parse_scholar(html: str) -> list[dict]:
-    """Parse publications from the Scholar profile page.
-
-    Returns a list of dicts: { title, year, venue, arxiv_id, scholar_url }.
+def normalize_serpapi_articles(articles: list[dict]) -> list[dict]:
+    """Convert SerpApi `articles` items into the internal schema
+    and sort reverse-chronologically (newest first).
     """
-    soup = BeautifulSoup(html, "html.parser")
     out: list[dict] = []
-
-    for row in soup.select("tr.gsc_a_tr"):
-        a = row.select_one("a.gsc_a_at")
-        if not a:
+    for a in articles:
+        title = (a.get("title") or "").strip()
+        if not title:
             continue
-        title = a.get_text(strip=True)
-        scholar_url = a.get("href", "")
-
-        year = None
-        venue = None
-        grays = row.select("div.gs_ibl, div.gs_gray")
-        if len(grays) >= 2:
-            tail = grays[1].get_text(" ", strip=True)
-            m = re.search(r"(.*?)(\d{4})\s*$", tail)
-            if m:
-                venue = m.group(1).strip().rstrip(",").strip() or None
-                year = m.group(2)
-            else:
-                venue = (tail or None)
-
-        year_span = row.select_one("span.gsc_a_h")
-        if year_span and not year:
-            year = year_span.get_text(strip=True)
-
+        year_raw = a.get("year") or ""
+        try:
+            year = str(int(year_raw))
+        except (ValueError, TypeError):
+            year = str(year_raw).strip()
+        venue = (a.get("publication") or "").strip() or None
         arxiv_id = None
         m = ARXIV_ID_BRACKET_RE.search(title)
         if m:
             arxiv_id = m.group(1)
         if not arxiv_id:
-            m = ARXIV_URL_RE.search(scholar_url)
+            m = ARXIV_URL_RE.search(a.get("link", "") or "")
             if m:
                 arxiv_id = m.group(1)
-
-        if not title:
-            continue
         out.append({
             "title": title,
             "year": year,
             "venue": venue,
             "arxiv_id": arxiv_id,
-            "scholar_url": scholar_url,
         })
 
+    # Reverse chronological order (newest first); ties broken by input order
+    def _year_key(e: dict) -> tuple[int, int]:
+        try:
+            return -int(e["year"]), 0
+        except (ValueError, TypeError):
+            return 0, 0
+
+    out.sort(key=_year_key)
     return out
 
 
@@ -207,7 +226,6 @@ def clean_venue(raw: Optional[str]) -> Optional[str]:
     # Strip "Proceedings of the " (with optional year and "the")
     s = re.sub(r"^Proceedings of (?:the )?(?:\d{4}\s+)?", "", s, flags=re.IGNORECASE)
 
-    # Split on commas and walk through parts, stopping at the first junk token
     parts = [p.strip() for p in s.split(",")]
     name_parts: list[str] = []
     for p in parts:
@@ -223,7 +241,6 @@ def clean_venue(raw: Optional[str]) -> Optional[str]:
     if not name_parts:
         return None
 
-    # Post-process the last name part: strip trailing volume/issue/article/ellipsis
     last = name_parts[-1]
     last = re.sub(r"\s+\d+\s*\(\d+\)\s*$", "", last)
     last = re.sub(r"\s+\d{1,3}\s*$", "", last)
@@ -233,7 +250,6 @@ def clean_venue(raw: Optional[str]) -> Optional[str]:
 
     name = " ".join(name_parts).strip()
 
-    # Strip redundant "-IEEE Conference on Computer Communications" suffix
     name = re.sub(
         r"\s*-\s*IEEE\s+Conference\s+on\s+Computer\s+Communications\s*$",
         "",
@@ -252,6 +268,30 @@ def clean_venue(raw: Optional[str]) -> Optional[str]:
 # ---------------------------------------------------------------------------
 # arxiv helpers
 # ---------------------------------------------------------------------------
+
+
+def http_get(url: str, params: Optional[dict] = None, attempts: int = ARXIV_RETRY_ATTEMPTS) -> Optional[requests.Response]:
+    """GET with retries on 429 / 5xx / network errors. Returns None on final failure."""
+    last_exc: Optional[Exception] = None
+    headers = {"User-Agent": "refresh-pubs/1.0 (mailto:hengzhao02@zju.edu.cn)"}
+    for attempt in range(1, attempts + 1):
+        try:
+            resp = requests.get(url, params=params, headers=headers, timeout=ARXIV_TIMEOUT)
+            if resp.status_code == 429 or 500 <= resp.status_code < 600:
+                last_exc = RuntimeError(f"HTTP {resp.status_code}")
+                log(f"[retry] {url} -> {resp.status_code} (attempt {attempt}/{attempts})")
+            elif resp.status_code == 200:
+                return resp
+            else:
+                gh_warning(f"Non-retryable HTTP {resp.status_code} fetching {url}")
+                return None
+        except requests.RequestException as e:
+            last_exc = e
+            log(f"[retry] {url} -> {type(e).__name__}: {e} (attempt {attempt}/{attempts})")
+        if attempt < attempts:
+            time.sleep(ARXIV_RETRY_BACKOFF * attempt)
+    gh_warning(f"All {attempts} attempts failed for {url}: {last_exc}")
+    return None
 
 
 def arxiv_search_by_title(title: str) -> Optional[str]:
@@ -276,7 +316,7 @@ def fetch_arxiv_bibtex(arxiv_id: str) -> Optional[str]:
 
 
 # ---------------------------------------------------------------------------
-# Local pubs.bib — parsing & string-level editing
+# pubs.bib — parsing & string-level editing
 # ---------------------------------------------------------------------------
 
 
@@ -297,8 +337,6 @@ def parse_pubs_bib(text: str) -> list[dict]:
 def clean_arxiv_bibtex(raw: str, note: str = "Preprint", journal: Optional[str] = None) -> Optional[str]:
     """Strip arxiv bibtex down to the minimal fields the user wants:
     author, title, year, url, note (and optionally journal).
-
-    Returns the cleaned BibTeX entry as a string, or None on parse failure.
     """
     try:
         db = bibtexparser.loads(raw)
@@ -335,7 +373,6 @@ def clean_arxiv_bibtex(raw: str, note: str = "Preprint", journal: Optional[str] 
 
 
 def _find_entry_span(text: str, entry_id: str) -> Optional[tuple[int, int, str, str, str]]:
-    """Locate the entry by citation key. Returns (start, end, head, body, tail) or None."""
     pattern = re.compile(
         r"(@\w+\s*\{\s*" + re.escape(entry_id) + r"\s*,)(.*?)(\n[ \t]*\}\s*(?:\n|$))",
         re.DOTALL,
@@ -347,7 +384,6 @@ def _find_entry_span(text: str, entry_id: str) -> Optional[tuple[int, int, str, 
 
 
 def _replace_field(body: str, field_name: str, value: str) -> str:
-    """Replace or insert a field (note, journal, etc.) in an entry body string."""
     pattern = re.compile(r"(\n[ \t]*" + field_name + r"\s*=\s*\{)([^}]*)(\})", re.IGNORECASE)
     if pattern.search(body):
         return pattern.sub(
@@ -390,6 +426,49 @@ def append_entry(text: str, raw_new_entry: str) -> str:
     return text + raw_new_entry.rstrip() + "\n"
 
 
+def reorder_pubs_bib(text: str) -> str:
+    """Reorder pubs.bib so entries are sorted by year descending (newest first).
+
+    Existing entries are split at the top-level `@...` markers, parsed for their
+    `year` field, and re-emitted in the original order of entries with the
+    highest year first. Ties broken by original order.
+    """
+    # Find all entry spans (no support for nested @) — keep preamble/comment lines
+    pattern = re.compile(
+        r"(@\w+\s*\{[^@]*?\n[ \t]*\}\s*)",
+        re.DOTALL,
+    )
+    matches = list(pattern.finditer(text))
+    if not matches:
+        return text
+
+    preamble = text[: matches[0].start()]
+    entries_text = [m.group(1) for m in matches]
+
+    def _year_of(entry_text: str) -> int:
+        m = re.search(r"^\s*year\s*=\s*\{?(\d{4})", entry_text, re.MULTILINE | re.IGNORECASE)
+        if m:
+            try:
+                return int(m.group(1))
+            except ValueError:
+                return 0
+        return 0
+
+    # Sort by (-year, original_index)
+    indexed = sorted(
+        enumerate(entries_text),
+        key=lambda t: (-_year_of(t[1]), t[0]),
+    )
+    sorted_entries = [text for _, text in indexed]
+
+    # Recombine with the same separator the original used (look at gap between matches)
+    if len(matches) >= 2:
+        gap = text[matches[0].end(): matches[1].start()]
+    else:
+        gap = "\n"
+    return preamble + gap.join(sorted_entries)
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -413,17 +492,16 @@ def main() -> int:
             existing_by_title[normalize_title(et)] = e
     log(f"Found {len(existing_entries)} existing entries")
 
-    log(f"Fetching {SCHOLAR_URL}")
-    resp = http_get(SCHOLAR_URL)
-    if resp is None:
-        gh_warning("Scholar fetch failed; skipping this run.")
+    raw_articles = fetch_scholar_author(SCHOLAR_USER)
+    if not raw_articles:
+        # Could be missing key, SerpApi down, or empty profile — all are no-ops
         set_output("changed", "false")
         return 0
 
-    scholar_entries = parse_scholar(resp.text)
-    log(f"Parsed {len(scholar_entries)} entries from Scholar")
+    scholar_entries = normalize_serpapi_articles(raw_articles)
+    log(f"Normalized {len(scholar_entries)} entries (reverse chronological)")
     if not scholar_entries:
-        gh_warning("Scholar returned no entries; skipping this run.")
+        gh_warning("No usable publications from SerpApi; skipping this run.")
         set_output("changed", "false")
         return 0
 
@@ -471,24 +549,29 @@ def main() -> int:
         log(f"Skipped {len(skipped_no_arxiv)} new entries without arxiv ID")
 
     if not new_entries_raw and not note_updates:
-        log("No changes.")
-        set_output("changed", "false")
-        return 0
+        log("No Scholar-driven changes (no new entries, no note updates).")
+    else:
+        new_text = original_text
+        for entry_id, title, new_note in note_updates:
+            if not entry_id:
+                continue
+            new_text, ok = update_note_for_entry(new_text, entry_id, new_note)
+            if not ok:
+                gh_warning(f"Could not find entry_id={entry_id!r} in pubs.bib (title: {title})")
+            else:
+                new_text, ok2 = inject_journal_for_entry(new_text, entry_id, new_note)
+                if not ok2:
+                    gh_warning(f"Could not inject journal for entry_id={entry_id!r}")
 
-    new_text = original_text
-    for entry_id, title, new_note in note_updates:
-        if not entry_id:
-            continue
-        new_text, ok = update_note_for_entry(new_text, entry_id, new_note)
-        if not ok:
-            gh_warning(f"Could not find entry_id={entry_id!r} in pubs.bib (title: {title})")
-        else:
-            new_text, ok2 = inject_journal_for_entry(new_text, entry_id, new_note)
-            if not ok2:
-                gh_warning(f"Could not inject journal for entry_id={entry_id!r}")
+        for raw in new_entries_raw:
+            new_text = append_entry(new_text, raw)
 
-    for raw in new_entries_raw:
-        new_text = append_entry(new_text, raw)
+    # Always reset the working text to original if we skipped the diff above
+    if not new_entries_raw and not note_updates:
+        new_text = original_text
+
+    # Always reorder (idempotent; no-op if already in reverse chronological order)
+    new_text = reorder_pubs_bib(new_text)
 
     if new_text == original_text:
         log("No effective changes (content identical).")

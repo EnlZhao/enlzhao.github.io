@@ -43,6 +43,7 @@ jobs:
         env:
           SCHOLAR_USER: rPclf40AAAAJ
           PUBS_BIB_PATH: pubs.bib
+          SERPAPI_API_KEY: ${{ secrets.SERPAPI_API_KEY }}
           GITHUB_OUTPUT: ${{ github.output }}
         run: python .github/scripts/refresh_pubs.py
 

@@ -448,19 +448,9 @@
 
 
     <script>
-        const bibtexData = `
-            @misc{zhao2025topologybehavioralsemanticsenhancing,
-                title={From Topology to Behavioral Semantics: Enhancing BGP Security by Understanding BGP's Language with LLMs}, 
-                author={Heng Zhao and Ruoyu Wang and Tianhang Zheng and Qi Li and Bo Lv and Yuyi Wang and Wenliang Du},
-                year={2025},
-                archivePrefix={arXiv},
-                note={Preprint},
-                url={https://arxiv.org/abs/2511.14467}, 
-            }
-        `;
         const MY_NAMES = ["Heng Zhao", "Zhao, Heng"];
 
-        function renderPubs() {
+        function renderPubs(bibtexData) {
             const entries = [];
             const regex = /@(\w+)\s*\{\s*([^,]*),\s*([\s\S]*?)\s*\}(?=\s*@|\s*$)/g;
             let match;
@@ -474,7 +464,7 @@
             }
             const html = entries.map(e => {
                 const isAward = /award|best/i.test(e.note||"");
-                let authors = (e.author||"").split(' and ').map(a => 
+                let authors = (e.author||"").split(' and ').map(a =>
                     MY_NAMES.some(n => a.includes(n)) ? `<strong><u>${a}</u></strong>` : a
                 ).join(", ");
                 return `
@@ -491,10 +481,26 @@
                     </a>
                 </div>`;
             }).join("");
-            document.getElementById('pub-container').innerHTML = html;
+            const container = document.getElementById('pub-container');
+            if (entries.length === 0) {
+                container.innerHTML = '<div style="color:var(--text-secondary); font-style:italic;">No publications found.</div>';
+            } else {
+                container.innerHTML = html;
+            }
         }
-        // <div class="pub-info">${authors} · ${e.year}</div>
-        renderPubs();
+
+        // 从外部 pubs.bib 加载 bibtex 数据
+        fetch('pubs.bib')
+            .then(r => {
+                if (!r.ok) throw new Error(`Failed to load pubs.bib: ${r.status}`);
+                return r.text();
+            })
+            .then(renderPubs)
+            .catch(err => {
+                console.error(err);
+                const container = document.getElementById('pub-container');
+                container.innerHTML = `<div style="color:#c0392b;">Failed to load publications: ${err.message}</div>`;
+            });
 
         function updateTime() {
             document.getElementById('timeDisplay').textContent = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});

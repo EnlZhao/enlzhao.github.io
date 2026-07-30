@@ -1,8 +1,13 @@
 name: Refresh pubs.bib from Google Scholar
 
+# Required repo settings:
+# - Settings → Actions → General → Workflow permissions: "Allow GitHub Actions to create and approve pull requests"
+# - Settings → General → Pull Requests → "Allow auto-merge"
+
 on:
   schedule:
-    # Every Monday at 08:00 UTC — pick a non-:00 minute to avoid the global GitHub cron stampede
+    # Every Monday at 08:00 UTC — weekly cadence. PR volume is gated by SerpApi diffs,
+    # so weekly runs only produce a PR when there is something new to merge.
     - cron: '0 8 * * 1'
   workflow_dispatch:
 
@@ -60,4 +65,5 @@ jobs:
             See the workflow run for the diff rationale. After merge, the homepage (which
             fetches `pubs.bib` at runtime) will reflect the changes automatically.
           delete-branch: true
+          auto-merge: true
 
